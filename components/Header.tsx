@@ -1,13 +1,14 @@
 
 import React from 'react';
-import { Menu, Layers } from 'lucide-react';
+import { Menu, Layers, Map as MapIcon, Globe } from 'lucide-react';
 
 interface HeaderProps {
   onMenuClick: () => void;
-  onLayerToggle: () => void;
+  mapLayer: 'standard' | 'satellite';
+  setMapLayer: (layer: 'standard' | 'satellite') => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick, onLayerToggle }) => {
+const Header: React.FC<HeaderProps> = ({ onMenuClick, mapLayer, setMapLayer }) => {
   return (
     <header className="h-20 md:h-16 flex items-center justify-between px-4 md:px-6 bg-gradient-to-r from-white via-white to-green-100 border-b border-green-200 z-[2000] shrink-0 shadow-md">
       <div className="flex items-center gap-3 md:gap-5">
@@ -38,10 +39,28 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onLayerToggle }) => {
         </div>
       </div>
       
-      <div className="flex items-center gap-2 md:gap-4">
-        {/* زر تبديل الخريطة للموبايل */}
+      <div className="flex items-center gap-3 md:gap-6">
+        {/* Map Switcher for Desktop */}
+        <div className="hidden md:flex bg-white/80 p-1 rounded-xl border border-green-200 shadow-sm gap-1">
+          <button 
+            onClick={() => setMapLayer('standard')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${mapLayer === 'standard' ? 'bg-green-700 text-white shadow-sm' : 'text-gray-500 hover:bg-green-50'}`}
+          >
+            <MapIcon size={12} />
+            Plan
+          </button>
+          <button 
+            onClick={() => setMapLayer('satellite')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${mapLayer === 'satellite' ? 'bg-green-700 text-white shadow-sm' : 'text-gray-500 hover:bg-green-50'}`}
+          >
+            <Globe size={12} />
+            Satellite
+          </button>
+        </div>
+
+        {/* Mobile Toggle Button */}
         <button 
-          onClick={onLayerToggle}
+          onClick={() => setMapLayer(mapLayer === 'standard' ? 'satellite' : 'standard')}
           className="md:hidden p-2.5 text-green-700 hover:bg-white/80 rounded-full transition-all border border-green-100 shadow-sm"
           title="Changer le fond de carte"
         >

@@ -121,19 +121,45 @@ const App: React.FC = () => {
     });
   }, [data, searchTerm, filterCommune, filterGenre, filterSecteur, filterNiveau]);
 
-  // Create Icon: Standard blue for all
+  // Enhanced Icon Creation: Distinguishes selected from non-selected
   const createCustomIcon = (isSelected: boolean) => {
+    if (isSelected) {
+      return L.divIcon({
+        className: 'custom-div-icon-selected',
+        html: `
+          <div class="flex items-center justify-center">
+            <div class="relative">
+              <!-- Animated Pulse Effect -->
+              <div class="absolute inset-0 w-8 h-8 -mt-1.5 -ml-1.5 bg-orange-500/40 rounded-full animate-ping"></div>
+              <!-- Professional Pin Container -->
+              <div class="relative flex flex-col items-center">
+                <!-- Main Circle -->
+                <div class="w-6 h-6 rounded-full bg-orange-600 border-2 border-white shadow-lg flex items-center justify-center z-20">
+                  <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                </div>
+                <!-- Triangle Pointer -->
+                <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-orange-600 -mt-1.5 z-10"></div>
+              </div>
+            </div>
+          </div>
+        `,
+        iconSize: [32, 40],
+        iconAnchor: [16, 32]
+      });
+    }
+
+    // Standard Non-selected Icon (Professional Blue Dot)
     return L.divIcon({
       className: 'custom-div-icon',
       html: `
-        <div class="flex items-center justify-center relative">
-          <div class="w-3.5 h-3.5 rounded-full bg-white border-2 shadow-sm ${isSelected ? 'border-blue-700 scale-125' : 'border-blue-500'} flex items-center justify-center transition-all z-10 relative">
-            <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+        <div class="flex items-center justify-center">
+          <div class="w-3.5 h-3.5 rounded-full bg-white border-2 border-blue-500 shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
           </div>
         </div>
       `,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
     });
   };
 
@@ -142,23 +168,20 @@ const App: React.FC = () => {
     const [lng, lat] = feature.geometry.coordinates;
     const gMapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
     
-    // Tooltip: Non-permanent, shows on hover
     layer.bindTooltip(name, {
       permanent: false,
       direction: 'top',
-      offset: [0, -10],
+      offset: [0, -15],
       className: 'coop-label-tooltip',
       opacity: 0.9,
       sticky: true
     });
 
-    // Popup: Shows on click with Google Maps link icon
     layer.bindPopup(`
       <div class="flex items-center justify-between gap-4 py-1 min-w-[140px]">
         <div class="text-xs font-bold text-gray-900 leading-tight">${name}</div>
         <a href="${gMapsUrl}" target="_blank" rel="noopener noreferrer" 
            class="flex items-center justify-center p-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-lg transition-all" 
-           title="Itinéraire Google Maps"
            onclick="event.stopPropagation()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
@@ -168,7 +191,7 @@ const App: React.FC = () => {
       </div>
     `, {
       closeButton: false,
-      offset: [0, -12]
+      offset: [0, -25]
     });
 
     layer.on({
@@ -193,7 +216,8 @@ const App: React.FC = () => {
     <div className="h-screen w-screen flex flex-col overflow-hidden font-sans bg-white">
       <Header 
         onMenuClick={() => setSidebarOpen(true)} 
-        onLayerToggle={() => setMapLayer(prev => prev === 'standard' ? 'satellite' : 'standard')}
+        mapLayer={mapLayer}
+        setMapLayer={setMapLayer}
       />
 
       <div className="flex flex-1 overflow-hidden relative">
@@ -264,29 +288,13 @@ const App: React.FC = () => {
                 data={{ type: "FeatureCollection", features: filteredFeatures } as any} 
                 onEachFeature={onEachFeature}
                 pointToLayer={(feature, latlng) => {
-                  const isSelected = selectedCoop?.properties.id === feature.properties.id || 
-                                     selectedCoop?.properties['Nom de coopérative'] === feature.properties['Nom de coopérative'];
+                  const isSelected = selectedCoop?.properties.id === feature.properties.id;
                   return L.marker(latlng, { icon: createCustomIcon(isSelected) });
                 }}
               />
             )}
             <MapFlyTo feature={selectedCoop} />
           </MapContainer>
-
-          <div className="hidden md:flex absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 p-1.5 gap-1">
-            <button 
-              onClick={() => setMapLayer('standard')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${mapLayer === 'standard' ? 'bg-blue-700 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              Vue Plan
-            </button>
-            <button 
-              onClick={() => setMapLayer('satellite')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${mapLayer === 'satellite' ? 'bg-blue-700 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              Vue Satellite
-            </button>
-          </div>
 
           {selectedCoop && (
             <DetailPanel 
