@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Search, ChevronLeft, MapPin, Filter, RotateCcw, X, User } from 'lucide-react';
-import { CooperativeFeature } from '../types';
+import { CooperativeFeature } from '../types.ts';
 
 interface SidebarProps {
   isOpen: boolean;
