@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -12,7 +11,6 @@ import DetailPanel from './components/DetailPanel';
 import Header from './components/Header';
 
 const GEOJSON_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/CooperativesDriouch.geojson";
-// افترضنا وجود ملفات الحدود في نفس المستودع، إذا لم تكن موجودة ستفشل الطلبات بصمت
 const COMMUNES_BOUNDS_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/Communes_Driouch.geojson";
 const PROVINCE_BOUNDS_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/Province_Driouch.geojson";
 
@@ -122,32 +120,39 @@ const App: React.FC = () => {
     });
   }, [data, searchTerm, filterCommune, filterGenre, filterSecteur, filterNiveau]);
 
-  // إنشاء أيقونة زرقاء دائرية
+  // Create Icon: Standard blue for all, no pulsing
   const createCustomIcon = (isSelected: boolean) => {
-    const mainColor = isSelected ? '#ef4444' : '#2563eb';
     return L.divIcon({
       className: 'custom-div-icon',
       html: `
-        <div class="flex items-center justify-center">
-          <div class="w-3 h-3 rounded-full bg-white border-2 shadow-sm ${isSelected ? 'border-red-500 scale-150' : 'border-blue-600'} flex items-center justify-center transition-all">
-            <div class="w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-red-500' : 'bg-blue-600'}"></div>
+        <div class="flex items-center justify-center relative">
+          <div class="w-3.5 h-3.5 rounded-full bg-white border-2 shadow-sm ${isSelected ? 'border-blue-700 scale-125' : 'border-blue-500'} flex items-center justify-center transition-all z-10 relative">
+            <div class="w-2 h-2 rounded-full bg-blue-600"></div>
           </div>
         </div>
       `,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6]
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
     });
   };
 
   const onEachFeature = (feature: CooperativeFeature, layer: L.Layer) => {
     const name = feature.properties['Nom de coopérative'] || feature.properties.Nom_Coop || "Coop";
     
-    // ربط تسمية دائمة فوق النقطة
+    // Tooltip: Non-permanent, shows on hover or click
     layer.bindTooltip(name, {
-      permanent: true,
+      permanent: false,
       direction: 'top',
       offset: [0, -10],
-      className: 'coop-label-tooltip'
+      className: 'coop-label-tooltip',
+      opacity: 0.9,
+      sticky: true
+    });
+
+    // Popup: Shows on click
+    layer.bindPopup(`<div class="text-sm font-bold text-gray-800">${name}</div>`, {
+      closeButton: false,
+      offset: [0, -12]
     });
 
     layer.on({
@@ -211,7 +216,6 @@ const App: React.FC = () => {
               url={LAYERS[mapLayer]}
             />
 
-            {/* حدود الإقليم - غير قابلة للتحديد */}
             {provinceBounds && (
               <GeoJSON 
                 data={provinceBounds} 
@@ -220,21 +224,20 @@ const App: React.FC = () => {
                   color: "#1e3a8a",
                   weight: 3,
                   fillOpacity: 0,
-                  dashArray: "5, 10"
+                  dashArray: "8, 12"
                 }}
               />
             )}
 
-            {/* حدود الجماعات - غير قابلة للتحديد */}
             {communesBounds && (
               <GeoJSON 
                 data={communesBounds} 
                 interactive={false}
                 style={{
-                  color: "#64748b",
+                  color: "#94a3b8",
                   weight: 1,
                   fillOpacity: 0.02,
-                  fillColor: "#f1f5f9"
+                  fillColor: "#94a3b8"
                 }}
               />
             )}
