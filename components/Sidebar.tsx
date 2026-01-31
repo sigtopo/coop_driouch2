@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, ChevronLeft, ChevronRight, MapPin, Sprout, Filter, RotateCcw, X } from 'lucide-react';
+import { Search, ChevronLeft, MapPin, Filter, RotateCcw, X } from 'lucide-react';
 import { CooperativeFeature } from '../types';
 
 interface SidebarProps {
@@ -58,9 +58,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside 
-      className={`fixed inset-0 md:relative bg-white border-r border-gray-200 flex flex-col z-[3000] md:z-[2000] shadow-2xl md:shadow-xl w-full md:w-80 transition-all`}
+      className={`fixed inset-0 md:relative bg-white border-r border-gray-200 flex flex-col z-[3000] md:z-[2000] shadow-2xl md:shadow-none w-full md:w-80 transition-all`}
     >
-      {/* Sidebar Desktop Toggle */}
+      {/* زر إغلاق القائمة للديسكتوب (السهم الجانبي) */}
       <button 
         onClick={() => setOpen(false)}
         className="hidden md:flex absolute -right-8 top-6 p-2 bg-white border border-gray-200 rounded-r-lg shadow-md hover:bg-gray-50 text-gray-500 z-[2001]"
@@ -68,41 +68,34 @@ const Sidebar: React.FC<SidebarProps> = ({
         <ChevronLeft size={20} />
       </button>
 
-      {/* Sidebar Header with Mobile Close */}
-      <div className="p-6 border-b border-gray-100 bg-green-800 text-white shrink-0 flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-black flex items-center gap-2 tracking-tight">
-            <Sprout size={28} className="text-green-400" />
-            DRIOUCH
-          </h1>
-          <p className="text-xs text-green-200 font-medium uppercase tracking-widest mt-1">Guide des Coopératives</p>
-        </div>
-        <button 
-          onClick={() => setOpen(false)}
-          className="md:hidden p-2 -mr-2 text-green-100 hover:text-white transition"
-        >
-          <X size={24} />
-        </button>
-      </div>
-
-      {/* Search and Filters Area */}
+      {/* منطقة البحث والفلترة */}
       <div className="p-4 bg-gray-50 border-b border-gray-200 space-y-3 shrink-0">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-white shadow-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Rechercher une coopérative..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 bg-white shadow-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+          </div>
+          
+          {/* زر إغلاق للموبايل فقط */}
+          <button 
+            onClick={() => setOpen(false)}
+            className="md:hidden p-2.5 bg-white border border-gray-300 rounded-xl text-gray-500 hover:bg-gray-100 transition"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Commune</label>
             <select 
-              className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white"
+              className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-green-500"
               value={filterCommune}
               onChange={(e) => setFilterCommune(e.target.value)}
             >
@@ -113,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Genre</label>
             <select 
-              className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white"
+              className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-green-500"
               value={filterGenre}
               onChange={(e) => setFilterGenre(e.target.value)}
             >
@@ -124,7 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Secteur</label>
             <select 
-              className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white"
+              className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-green-500"
               value={filterSecteur}
               onChange={(e) => setFilterSecteur(e.target.value)}
             >
@@ -135,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Niveau</label>
             <select 
-              className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white"
+              className="w-full p-2 text-xs border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-green-500"
               value={filterNiveau}
               onChange={(e) => setFilterNiveau(e.target.value)}
             >
@@ -147,14 +140,14 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         <button 
           onClick={resetFilters}
-          className="w-full py-2 flex items-center justify-center gap-2 text-[10px] font-bold text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition"
+          className="w-full py-2 flex items-center justify-center gap-2 text-[10px] font-bold text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition border border-green-100"
         >
           <RotateCcw size={12} />
           RÉINITIALISER LES FILTRES
         </button>
       </div>
 
-      {/* List Area */}
+      {/* منطقة القائمة */}
       <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
         {features.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-sm">
@@ -185,8 +178,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
 
-      <div className="p-4 bg-gray-100 border-t border-gray-200 text-center text-[10px] text-gray-500 font-bold uppercase tracking-widest shrink-0">
-        {features.length} Coopératives trouvées
+      <div className="p-4 bg-gray-50 border-t border-gray-200 text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest shrink-0">
+        {features.length} Coopératives affichées
       </div>
     </aside>
   );
