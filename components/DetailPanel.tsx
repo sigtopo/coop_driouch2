@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { 
   X, 
   Search,
@@ -26,6 +26,13 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ selectedCoop, allCoops, onSel
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Dragging State
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+  const initialPos = useRef({ x: 0, y: 0 });
+
   const p = selectedCoop?.properties;
 
   // Autocomplete Logic
@@ -51,6 +58,51 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ selectedCoop, allCoops, onSel
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Dragging Logic handlers
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (window.innerWidth < 768) return; // Disable dragging on mobile
+    
+    // Only allow drag from the top handle area or the header background
+    // but not from buttons or inputs
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input')) return;
+
+    setIsDragging(true);
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    initialPos.current = { x: position.x, y: position.y };
+    
+    // Prevent text selection while dragging
+    e.preventDefault();
+  }, [position]);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const dx = e.clientX - dragStartPos.current.x;
+      const dy = e.clientY - dragStartPos.current.y;
+      
+      setPosition({
+        x: initialPos.current.x + dx,
+        y: initialPos.current.y + dy
+      });
+    };
+
+    const onMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isDragging]);
+
   // When a coop is selected via map, automatically close search and show panel
   useEffect(() => {
     if (selectedCoop) {
@@ -73,12 +125,18 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ selectedCoop, allCoops, onSel
     onClose();
     setIsExpanded(false);
     setLocalSearch("");
+    // Optionally reset position on close
+    // setPosition({ x: 0, y: 0 });
   };
 
   // IF NOTHING IS SELECTED AND SEARCH IS CLOSED: SHOW ONLY FLOATING ICON
   if (!selectedCoop && !isSearchOpen) {
     return (
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[4000] pointer-events-auto">
+      <div 
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[4000] pointer-events-auto"
+        style={{ transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)` }}
+        onMouseDown={onMouseDown}
+      >
         <button 
           onClick={() => setIsSearchOpen(true)}
           className="w-14 h-14 bg-green-600 text-white rounded-full shadow-[0_8px_25px_rgba(22,163,74,0.4)] hover:bg-green-700 hover:scale-110 transition-all flex items-center justify-center border-4 border-white"
@@ -93,22 +151,26 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ selectedCoop, allCoops, onSel
   return (
     <div 
       ref={containerRef}
-      className={`fixed bottom-0 left-0 right-0 z-[4000] flex justify-center p-0 md:p-4 pointer-events-none transition-all duration-500 ease-in-out ${isExpanded ? 'h-[85vh]' : 'h-auto'}`}
+      className={`fixed bottom-0 left-0 right-0 z-[4000] flex justify-center p-0 md:p-4 pointer-events-none transition-all duration-500 ease-in-out ${isExpanded ? 'h-[85vh]' : 'h-auto'} ${isDragging ? 'duration-0' : ''}`}
+      style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
     >
       <div 
         className={`bg-white w-full max-w-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.15)] pointer-events-auto transition-all duration-500 flex flex-col border border-slate-200/60
-          ${isExpanded ? 'rounded-t-3xl h-full' : 'rounded-t-[2rem] h-auto mb-0 md:mb-2 md:rounded-2xl'}`}
+          ${isExpanded ? 'rounded-t-3xl h-full' : 'rounded-t-[2rem] h-auto mb-0 md:mb-2 md:rounded-2xl'} ${isDragging ? 'duration-0 scale-[1.01] shadow-2xl ring-2 ring-green-500/20' : ''}`}
       >
-        {/* Drag Handle */}
+        {/* Drag Handle Area */}
         <div 
-          className="flex flex-col items-center py-2 cursor-pointer shrink-0"
-          onClick={() => selectedCoop && setIsExpanded(!isExpanded)}
+          className={`flex flex-col items-center py-2 cursor-grab active:cursor-grabbing shrink-0 transition-colors ${isDragging ? 'bg-slate-50 rounded-t-[2rem] md:rounded-t-2xl' : ''}`}
+          onMouseDown={onMouseDown}
         >
-          <div className="w-12 h-1 bg-slate-200 rounded-full"></div>
+          <div className="w-12 h-1 bg-slate-300 rounded-full"></div>
+          <div className="md:hidden w-full text-center mt-1">
+             <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">DÉPLACER</span>
+          </div>
         </div>
 
         {/* --- Header Area --- */}
-        <div className="px-5 pb-4">
+        <div className="px-5 pb-4" onMouseDown={onMouseDown}>
           <div className="flex justify-between items-center gap-3">
             
             <div className="flex-1 min-w-0">
