@@ -26,35 +26,58 @@ const LAYERS = {
 const MapController: React.FC<{ 
   selectedCoop: CooperativeFeature | null; 
   provinceBounds: any;
+  data: CooperativeGeoJSON | null;
   isSidebarOpen: boolean;
   resetTrigger: number;
-}> = ({ selectedCoop, provinceBounds, isSidebarOpen, resetTrigger }) => {
+}> = ({ selectedCoop, provinceBounds, data, isSidebarOpen, resetTrigger }) => {
   const map = useMap();
   const hasInitiallyFit = useRef(false);
 
+  // تحديث حجم الخريطة عند تغيير القائمة الجانبية لضمان سلاسة العرض
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       map.invalidateSize({ animate: true });
-    }, 300);
+    }, 450);
+    return () => clearTimeout(timer);
   }, [isSidebarOpen, map]);
 
-  useEffect(() => {
+  // VUE HOME: ضبط إطار الرؤية ليتطابق مع الصورة (نظرة شاملة للإقليم)
+  const fitToHome = useCallback(() => {
+    let targetBounds: L.LatLngBounds | null = null;
+
     if (provinceBounds) {
       const geoJsonLayer = L.geoJSON(provinceBounds);
-      const bounds = geoJsonLayer.getBounds();
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [20, 20], animate: resetTrigger > 0 });
-        hasInitiallyFit.current = true;
-      }
+      targetBounds = geoJsonLayer.getBounds();
+    } else if (data && data.features.length > 0) {
+      const geoJsonLayer = L.geoJSON(data as any);
+      targetBounds = geoJsonLayer.getBounds();
     }
-  }, [provinceBounds, map, resetTrigger]);
 
+    if (targetBounds && targetBounds.isValid()) {
+      // استخدام حشوة (padding) أكبر قليلاً لمطابقة شكل "الزووم" في الصورة المرفقة
+      map.fitBounds(targetBounds, { 
+        padding: window.innerWidth < 768 ? [40, 40] : [80, 80], 
+        animate: hasInitiallyFit.current,
+        duration: 1.5
+      });
+      hasInitiallyFit.current = true;
+    }
+  }, [provinceBounds, data, map]);
+
+  // تفعيل وضع الهوم عند البداية أو عند طلب إعادة التعيين
+  useEffect(() => {
+    if (!selectedCoop) {
+      fitToHome();
+    }
+  }, [fitToHome, resetTrigger, selectedCoop]);
+
+  // الانتقال لنقطة محددة عند الاختيار
   useEffect(() => {
     if (selectedCoop && selectedCoop.geometry.type === 'Point') {
       const [lng, lat] = selectedCoop.geometry.coordinates;
-      const offset = window.innerWidth < 768 ? 0.005 : 0.002;
+      const offset = window.innerWidth < 768 ? 0.007 : 0.0025;
       map.flyTo([lat - offset, lng], 16, {
-        duration: 1.2,
+        duration: 1.8,
         easeLinearity: 0.25
       });
     }
@@ -118,12 +141,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     fetchData(true);
-    
-    // التحديث التلقائي كل 5 دقائق
     const interval = setInterval(() => {
       fetchData(false);
     }, 5 * 60 * 1000);
-
     return () => clearInterval(interval);
   }, [fetchData]);
 
@@ -183,6 +203,7 @@ const App: React.FC = () => {
     });
   }, [data, searchTerm, filterCommune, filterGenre, filterSecteur, filterNiveau]);
 
+  // إنشاء الأيقونة لتطابق تماماً الصورة (دائرة بيضاء بحدود كحلية ونقطة كحلية)
   const createCustomIcon = useCallback((isSelected: boolean) => {
     if (isSelected) {
       return L.divIcon({
@@ -192,10 +213,10 @@ const App: React.FC = () => {
             <div class="relative">
               <div class="absolute inset-0 w-10 h-10 -mt-3 -ml-3 bg-slate-900/20 rounded-full animate-ping"></div>
               <div class="relative flex flex-col items-center">
-                <div class="w-9 h-9 rounded-full bg-[#1e293b] border-2 border-white shadow-2xl flex items-center justify-center z-20">
+                <div class="w-9 h-9 rounded-full bg-[#0f172a] border-2 border-white shadow-2xl flex items-center justify-center z-20">
                   <div class="w-2.5 h-2.5 rounded-full bg-white"></div>
                 </div>
-                <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[12px] border-t-[#1e293b] -mt-2.5 z-10"></div>
+                <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[12px] border-t-[#0f172a] -mt-2.5 z-10"></div>
               </div>
             </div>
           </div>
@@ -209,8 +230,8 @@ const App: React.FC = () => {
       className: 'custom-div-icon',
       html: `
         <div class="flex items-center justify-center">
-          <div class="w-5 h-5 rounded-full bg-white border-2 border-slate-700 shadow-lg flex items-center justify-center hover:scale-125 transition-all duration-300">
-            <div class="w-2 h-2 rounded-full bg-slate-700"></div>
+          <div class="w-4 h-4 md:w-5 md:h-5 rounded-full bg-white border-[2px] md:border-[2.5px] border-[#0f172a] shadow-md flex items-center justify-center hover:scale-150 transition-all duration-300">
+            <div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#0f172a]"></div>
           </div>
         </div>
       `,
@@ -242,7 +263,7 @@ const App: React.FC = () => {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-white text-slate-800">
         <Loader2 className="w-12 h-12 animate-spin mb-4" />
-        <h2 className="text-xl font-bold tracking-tight">Chargement du portail...</h2>
+        <h2 className="text-xl font-bold tracking-tight text-center px-4">Préparation de l'Observatoire...</h2>
       </div>
     );
   }
@@ -303,7 +324,7 @@ const App: React.FC = () => {
               <GeoJSON 
                 data={provinceBounds} 
                 interactive={false}
-                style={{ color: "#334155", weight: 3, fillOpacity: 0, dashArray: '8, 8' }}
+                style={{ color: "#0f172a", weight: 3, fillOpacity: 0, dashArray: '6, 6' }}
               />
             )}
 
@@ -311,7 +332,7 @@ const App: React.FC = () => {
               <GeoJSON 
                 data={communesBounds} 
                 interactive={false}
-                style={{ color: "#cbd5e1", weight: 1, fillOpacity: 0.01 }}
+                style={{ color: "#475569", weight: 1, fillOpacity: 0.02, dashArray: '2, 4' }}
               />
             )}
 
@@ -346,6 +367,7 @@ const App: React.FC = () => {
             <MapController 
               selectedCoop={selectedCoop} 
               provinceBounds={provinceBounds} 
+              data={data}
               isSidebarOpen={isSidebarOpen}
               resetTrigger={resetTrigger}
             />
@@ -372,7 +394,7 @@ const App: React.FC = () => {
             <button 
               onClick={handleHomeClick}
               className="p-3 bg-white rounded-xl shadow-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all active:scale-95 group"
-              title="Vue d'ensemble (Home)"
+              title="VUE HOME (Vue Provinciale)"
             >
               <Home size={22} className="group-hover:scale-110 transition-transform" />
             </button>

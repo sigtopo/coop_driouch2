@@ -35,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({
           <img 
             src="https://aid-maroc.com/wp-content/uploads/2021/04/Logo-222.png" 
             alt="AID Maroc" 
-            className="h-10 md:h-11 w-auto object-contain grayscale opacity-90"
+            className="h-10 md:h-11 w-auto object-contain opacity-100" 
           />
           
           <div className="border-l-2 border-slate-200 pl-3 md:pl-4">
