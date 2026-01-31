@@ -12,6 +12,9 @@ import DetailPanel from './components/DetailPanel';
 import Header from './components/Header';
 
 const GEOJSON_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/CooperativesDriouch.geojson";
+// افترضنا وجود ملفات الحدود في نفس المستودع، إذا لم تكن موجودة ستفشل الطلبات بصمت
+const COMMUNES_BOUNDS_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/Communes_Driouch.geojson";
+const PROVINCE_BOUNDS_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/Province_Driouch.geojson";
 
 const LAYERS = {
   standard: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -31,6 +34,8 @@ const MapFlyTo: React.FC<{ feature: CooperativeFeature | null }> = ({ feature })
 
 const App: React.FC = () => {
   const [data, setData] = useState<CooperativeGeoJSON | null>(null);
+  const [communesBounds, setCommunesBounds] = useState<any>(null);
+  const [provinceBounds, setProvinceBounds] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCoop, setSelectedCoop] = useState<CooperativeFeature | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,12 +50,22 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(GEOJSON_URL);
-        if (!response.ok) throw new Error("Échec du chargement");
-        const json: CooperativeGeoJSON = await response.json();
-        setData(json);
+        const [resCoops, resCommunes, resProvince] = await Promise.all([
+          fetch(GEOJSON_URL),
+          fetch(COMMUNES_BOUNDS_URL).catch(() => null),
+          fetch(PROVINCE_BOUNDS_URL).catch(() => null)
+        ]);
+
+        if (resCoops.ok) {
+          const json = await resCoops.json();
+          setData(json);
+        }
+
+        if (resCommunes?.ok) setCommunesBounds(await resCommunes.json());
+        if (resProvince?.ok) setProvinceBounds(await resProvince.json());
+
       } catch (err: any) {
-        console.error(err);
+        console.error("Erreur de chargement:", err);
       } finally {
         setLoading(false);
       }
@@ -85,8 +100,6 @@ const App: React.FC = () => {
     
     const filtered = data.features.filter(f => {
       const p = f.properties;
-      
-      // منطق البحث المخصص: اسم التعاونية أو اسم الرئيس
       const coopName = (p['Nom de coopérative'] || p.Nom_Coop || "").toLowerCase();
       const presidentName = (p['Nom et prénom président/gestionnaire'] || "").toLowerCase();
       
@@ -109,27 +122,34 @@ const App: React.FC = () => {
     });
   }, [data, searchTerm, filterCommune, filterGenre, filterSecteur, filterNiveau]);
 
-  const createCustomIcon = (name: string, isSelected: boolean) => {
-    const color = isSelected ? '#f97316' : (mapLayer === 'satellite' ? '#4ade80' : '#16a34a');
-    const borderColor = isSelected ? 'border-orange-500' : (mapLayer === 'satellite' ? 'border-green-400' : 'border-green-600');
+  // إنشاء أيقونة زرقاء دائرية
+  const createCustomIcon = (isSelected: boolean) => {
+    const mainColor = isSelected ? '#ef4444' : '#2563eb';
     return L.divIcon({
       className: 'custom-div-icon',
       html: `
-        <div class="flex items-center gap-1 group">
-          <div class="flex items-center justify-center w-6 h-6 bg-white border-2 ${borderColor} ${isSelected ? 'scale-125' : ''} rounded-full shadow-md transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m12 10 2 4v3a1 1 0 0 0 1 1h2a1 1 0 0 1 1 1v2H6v-2a1 1 0 0 1 1-1h2a1 1 0 0 0 1-1v-3l2-4Z"/><path d="M7 2h10"/><path d="M12 2v5"/><path d="M9 4v2"/><path d="M15 4v2"/></svg>
-          </div>
-          <div class="bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded border border-gray-200 shadow-sm text-[10px] font-bold text-gray-800 whitespace-nowrap hidden group-hover:block ${isSelected ? 'block !bg-orange-50 !border-orange-200' : ''}">
-            ${name}
+        <div class="flex items-center justify-center">
+          <div class="w-3 h-3 rounded-full bg-white border-2 shadow-sm ${isSelected ? 'border-red-500 scale-150' : 'border-blue-600'} flex items-center justify-center transition-all">
+            <div class="w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-red-500' : 'bg-blue-600'}"></div>
           </div>
         </div>
       `,
-      iconSize: [30, 30],
-      iconAnchor: [12, 12]
+      iconSize: [12, 12],
+      iconAnchor: [6, 6]
     });
   };
 
   const onEachFeature = (feature: CooperativeFeature, layer: L.Layer) => {
+    const name = feature.properties['Nom de coopérative'] || feature.properties.Nom_Coop || "Coop";
+    
+    // ربط تسمية دائمة فوق النقطة
+    layer.bindTooltip(name, {
+      permanent: true,
+      direction: 'top',
+      offset: [0, -10],
+      className: 'coop-label-tooltip'
+    });
+
     layer.on({
       click: (e) => {
         L.DomEvent.stopPropagation(e);
@@ -141,7 +161,7 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white text-green-800">
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white text-blue-800">
         <Loader2 className="w-12 h-12 animate-spin mb-4" />
         <h2 className="text-xl font-bold font-sans tracking-tight">Chargement des données...</h2>
       </div>
@@ -190,16 +210,44 @@ const App: React.FC = () => {
               attribution={mapLayer === 'standard' ? '&copy; OpenStreetMap' : '&copy; Google Maps'}
               url={LAYERS[mapLayer]}
             />
+
+            {/* حدود الإقليم - غير قابلة للتحديد */}
+            {provinceBounds && (
+              <GeoJSON 
+                data={provinceBounds} 
+                interactive={false}
+                style={{
+                  color: "#1e3a8a",
+                  weight: 3,
+                  fillOpacity: 0,
+                  dashArray: "5, 10"
+                }}
+              />
+            )}
+
+            {/* حدود الجماعات - غير قابلة للتحديد */}
+            {communesBounds && (
+              <GeoJSON 
+                data={communesBounds} 
+                interactive={false}
+                style={{
+                  color: "#64748b",
+                  weight: 1,
+                  fillOpacity: 0.02,
+                  fillColor: "#f1f5f9"
+                }}
+              />
+            )}
+
             {filteredFeatures.length > 0 && (
               <GeoJSON 
-                key={JSON.stringify(filteredFeatures.length + filterCommune + filterGenre + filterSecteur + filterNiveau + (selectedCoop?.properties?.id || '') + mapLayer)}
+                key={JSON.stringify(filteredFeatures.length + (selectedCoop?.properties?.id || '') + mapLayer)}
                 data={{ type: "FeatureCollection", features: filteredFeatures } as any} 
                 onEachFeature={onEachFeature}
                 pointToLayer={(feature, latlng) => {
-                  const name = feature.properties['Nom de coopérative'] || feature.properties.Nom_Coop || "Coop";
                   const isSelected = selectedCoop?.properties.id === feature.properties.id || 
                                      selectedCoop?.properties['Nom de coopérative'] === feature.properties['Nom de coopérative'];
-                  return L.marker(latlng, { icon: createCustomIcon(name, isSelected) });
+                  return L.marker(latlng, { icon: createCustomIcon(isSelected) });
                 }}
               />
             )}
@@ -209,13 +257,13 @@ const App: React.FC = () => {
           <div className="hidden md:flex absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 p-1.5 gap-1">
             <button 
               onClick={() => setMapLayer('standard')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${mapLayer === 'standard' ? 'bg-green-700 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${mapLayer === 'standard' ? 'bg-blue-700 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               Vue Plan
             </button>
             <button 
               onClick={() => setMapLayer('satellite')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${mapLayer === 'satellite' ? 'bg-green-700 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${mapLayer === 'satellite' ? 'bg-blue-700 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               Vue Satellite
             </button>
@@ -231,7 +279,7 @@ const App: React.FC = () => {
           {!isSidebarOpen && (
             <button 
               onClick={() => setSidebarOpen(true)}
-              className="hidden md:flex absolute top-4 left-4 z-[1000] p-3 bg-white rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 text-green-700 transition-transform hover:scale-110"
+              className="hidden md:flex absolute top-4 left-4 z-[1000] p-3 bg-white rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 text-blue-700 transition-transform hover:scale-110"
             >
               <Menu size={24} />
             </button>
