@@ -33,7 +33,6 @@ const MapController: React.FC<{
   const map = useMap();
   const hasInitiallyFit = useRef(false);
 
-  // تحديث حجم الخريطة عند تغيير القائمة الجانبية لضمان سلاسة العرض
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize({ animate: true });
@@ -41,7 +40,6 @@ const MapController: React.FC<{
     return () => clearTimeout(timer);
   }, [isSidebarOpen, map]);
 
-  // VUE HOME: ضبط إطار الرؤية ليتطابق مع الصورة (نظرة شاملة للإقليم)
   const fitToHome = useCallback(() => {
     let targetBounds: L.LatLngBounds | null = null;
 
@@ -54,7 +52,6 @@ const MapController: React.FC<{
     }
 
     if (targetBounds && targetBounds.isValid()) {
-      // استخدام حشوة (padding) أكبر قليلاً لمطابقة شكل "الزووم" في الصورة المرفقة
       map.fitBounds(targetBounds, { 
         padding: window.innerWidth < 768 ? [40, 40] : [80, 80], 
         animate: hasInitiallyFit.current,
@@ -64,14 +61,12 @@ const MapController: React.FC<{
     }
   }, [provinceBounds, data, map]);
 
-  // تفعيل وضع الهوم عند البداية أو عند طلب إعادة التعيين
   useEffect(() => {
     if (!selectedCoop) {
       fitToHome();
     }
   }, [fitToHome, resetTrigger, selectedCoop]);
 
-  // الانتقال لنقطة محددة عند الاختيار
   useEffect(() => {
     if (selectedCoop && selectedCoop.geometry.type === 'Point') {
       const [lng, lat] = selectedCoop.geometry.coordinates;
@@ -203,7 +198,6 @@ const App: React.FC = () => {
     });
   }, [data, searchTerm, filterCommune, filterGenre, filterSecteur, filterNiveau]);
 
-  // إنشاء الأيقونة لتطابق تماماً الصورة (دائرة بيضاء بحدود كحلية ونقطة كحلية)
   const createCustomIcon = useCallback((isSelected: boolean) => {
     if (isSelected) {
       return L.divIcon({
@@ -211,12 +205,12 @@ const App: React.FC = () => {
         html: `
           <div class="flex items-center justify-center">
             <div class="relative">
-              <div class="absolute inset-0 w-10 h-10 -mt-3 -ml-3 bg-slate-900/20 rounded-full animate-ping"></div>
+              <div class="absolute inset-0 w-10 h-10 -mt-3 -ml-3 bg-blue-600/20 rounded-full animate-ping"></div>
               <div class="relative flex flex-col items-center">
-                <div class="w-9 h-9 rounded-full bg-[#0f172a] border-2 border-white shadow-2xl flex items-center justify-center z-20">
+                <div class="w-9 h-9 rounded-full bg-[#2563eb] border-2 border-white shadow-2xl flex items-center justify-center z-20">
                   <div class="w-2.5 h-2.5 rounded-full bg-white"></div>
                 </div>
-                <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[12px] border-t-[#0f172a] -mt-2.5 z-10"></div>
+                <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[12px] border-t-[#2563eb] -mt-2.5 z-10"></div>
               </div>
             </div>
           </div>
@@ -230,8 +224,8 @@ const App: React.FC = () => {
       className: 'custom-div-icon',
       html: `
         <div class="flex items-center justify-center">
-          <div class="w-4 h-4 md:w-5 md:h-5 rounded-full bg-white border-[2px] md:border-[2.5px] border-[#0f172a] shadow-md flex items-center justify-center hover:scale-150 transition-all duration-300">
-            <div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#0f172a]"></div>
+          <div class="w-4 h-4 md:w-5 md:h-5 rounded-full bg-white border-[2px] md:border-[2.5px] border-[#2563eb] shadow-md flex items-center justify-center hover:scale-150 transition-all duration-300">
+            <div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#2563eb]"></div>
           </div>
         </div>
       `,
@@ -324,7 +318,7 @@ const App: React.FC = () => {
               <GeoJSON 
                 data={provinceBounds} 
                 interactive={false}
-                style={{ color: "#0f172a", weight: 3, fillOpacity: 0, dashArray: '6, 6' }}
+                style={{ color: "#dc2626", weight: 3, fillOpacity: 0, dashArray: '6, 6' }}
               />
             )}
 
