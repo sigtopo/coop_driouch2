@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -12,7 +13,7 @@ import Header from './components/Header';
 
 const GEOJSON_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/CooperativesDriouch.geojson";
 const COMMUNES_BOUNDS_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/Communes_Driouch.geojson";
-const PROVINCE_BOUNDS_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/Province_Driouch.geojson";
+const PROVINCE_BOUNDS_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/PROVINCE_DRIOUCH.geojson";
 
 const LAYERS = {
   standard: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -120,7 +121,7 @@ const App: React.FC = () => {
     });
   }, [data, searchTerm, filterCommune, filterGenre, filterSecteur, filterNiveau]);
 
-  // Create Icon: Standard blue for all, no pulsing
+  // Create Icon: Standard blue for all
   const createCustomIcon = (isSelected: boolean) => {
     return L.divIcon({
       className: 'custom-div-icon',
@@ -138,8 +139,10 @@ const App: React.FC = () => {
 
   const onEachFeature = (feature: CooperativeFeature, layer: L.Layer) => {
     const name = feature.properties['Nom de coopérative'] || feature.properties.Nom_Coop || "Coop";
+    const [lng, lat] = feature.geometry.coordinates;
+    const gMapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
     
-    // Tooltip: Non-permanent, shows on hover or click
+    // Tooltip: Non-permanent, shows on hover
     layer.bindTooltip(name, {
       permanent: false,
       direction: 'top',
@@ -149,8 +152,21 @@ const App: React.FC = () => {
       sticky: true
     });
 
-    // Popup: Shows on click
-    layer.bindPopup(`<div class="text-sm font-bold text-gray-800">${name}</div>`, {
+    // Popup: Shows on click with Google Maps link icon
+    layer.bindPopup(`
+      <div class="flex items-center justify-between gap-4 py-1 min-w-[140px]">
+        <div class="text-xs font-bold text-gray-900 leading-tight">${name}</div>
+        <a href="${gMapsUrl}" target="_blank" rel="noopener noreferrer" 
+           class="flex items-center justify-center p-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-lg transition-all" 
+           title="Itinéraire Google Maps"
+           onclick="event.stopPropagation()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </a>
+      </div>
+    `, {
       closeButton: false,
       offset: [0, -12]
     });
@@ -221,10 +237,10 @@ const App: React.FC = () => {
                 data={provinceBounds} 
                 interactive={false}
                 style={{
-                  color: "#1e3a8a",
-                  weight: 3,
+                  color: "#ff0000",
+                  weight: 6,
                   fillOpacity: 0,
-                  dashArray: "8, 12"
+                  dashArray: ""
                 }}
               />
             )}
