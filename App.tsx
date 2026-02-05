@@ -14,9 +14,11 @@ import DetailPanel from './components/DetailPanel.tsx';
 import Header from './components/Header.tsx';
 import AIInsights from './components/AIInsights.tsx';
 
-const GEOJSON_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/CooperativesDriouch.geojson";
-const COMMUNES_BOUNDS_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/Communes_Driouch.geojson";
-const PROVINCE_BOUNDS_URL = "https://raw.githubusercontent.com/sigtopo/coop_driouch/refs/heads/main/PROVINCE_DRIOUCH.geojson";
+
+// روابط البيانات الأساسية من GitHub
+const GEOJSON_URL = "https://geotoposig.com/Cooperatives_Driouch.geojson";
+const COMMUNES_BOUNDS_URL = "https://raw.githubusercontent.com/geotoposig/AIDSIG/refs/heads/main/COMMUNES_DRIOUCH.geojson";
+const PROVINCE_BOUNDS_URL = "https://raw.githubusercontent.com/geotoposig/AIDSIG/refs/heads/main/PROVINCE_DRIOUCH.geojson";
 
 const LAYERS = {
   standard: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -411,6 +413,18 @@ const App: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {data && (
+        <button 
+          onClick={() => setAIModalOpen(true)}
+          className="fixed bottom-6 right-6 z-[5000] flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all group"
+        >
+          <div className="bg-white/20 p-2 rounded-xl group-hover:rotate-12 transition-transform">
+             <Loader2 size={20} className={refreshing ? 'animate-spin' : ''} />
+          </div>
+          <span className="font-bold tracking-tight">Intelligence AI</span>
+        </button>
+      )}
 
       <AIInsights 
         isOpen={isAIModalOpen} 
